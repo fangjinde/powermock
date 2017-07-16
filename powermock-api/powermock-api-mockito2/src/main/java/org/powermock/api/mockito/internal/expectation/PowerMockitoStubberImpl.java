@@ -22,7 +22,7 @@ import org.mockito.stubbing.Stubber;
 import org.powermock.api.mockito.expectation.PowerMockitoStubber;
 import org.powermock.api.mockito.expectation.PrivatelyExpectedArguments;
 import org.powermock.api.mockito.invocation.MockitoMethodInvocationControl;
-import org.powermock.api.mockito.invocation.MockHandlerAccessor;
+import org.powermock.api.mockito.invocation.MockHandlerAdaptor;
 import org.powermock.core.MockRepository;
 import org.powermock.reflect.Whitebox;
 
@@ -64,7 +64,7 @@ public class PowerMockitoStubberImpl extends StubberImpl implements PowerMockito
 
     @SuppressWarnings("unchecked")
     private void addAnswersForStubbing(MockitoMethodInvocationControl invocationControl) {
-        final MockHandlerAccessor mockHandler = invocationControl.getMockHandlerAccessor();
+        final MockHandlerAdaptor mockHandler = invocationControl.getMockHandlerAdaptor();
         final List<Answer<?>> answers = Whitebox.getInternalState(this, List.class);
         mockHandler.setAnswersForStubbing(answers);
     }

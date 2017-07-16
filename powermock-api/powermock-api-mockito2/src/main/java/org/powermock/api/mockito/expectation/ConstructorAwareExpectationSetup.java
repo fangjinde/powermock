@@ -17,8 +17,6 @@
 package org.powermock.api.mockito.expectation;
 
 import org.mockito.stubbing.OngoingStubbing;
-import org.powermock.api.mockito.expectation.DefaultConstructorExpectationSetup;
-import org.powermock.api.mockito.expectation.WithOrWithoutExpectedArguments;
 
 import java.lang.reflect.Constructor;
 

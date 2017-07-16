@@ -33,11 +33,9 @@ import org.mockito.internal.stubbing.InvocationContainerImpl;
 import org.mockito.internal.verification.VerificationDataImpl;
 import org.mockito.internal.verification.VerificationModeFactory;
 import org.mockito.invocation.Invocation;
-import org.mockito.invocation.MockHandler;
 import org.mockito.verification.VerificationMode;
 import org.powermock.api.mockito.internal.invocation.InvocationControlAssertionError;
 import org.powermock.api.mockito.internal.verification.StaticMockAwareVerificationMode;
-import org.powermock.api.mockito.invocation.MockHandlerAccessor;
 import org.powermock.api.support.SafeExceptionRethrower;
 import org.powermock.core.MockGateway;
 import org.powermock.core.MockRepository;
@@ -59,7 +57,7 @@ public class MockitoMethodInvocationControl<T> implements MethodInvocationContro
     
     private final Set<Method> mockedMethods;
     private final Object delegator;
-    private final MockHandlerAccessor<T> mockHandlerAccessor;
+    private final MockHandlerAdaptor<T> mockHandlerAdaptor;
     
     /**
      * Creates a new instance with a delegator. This delegator may be
@@ -84,7 +82,7 @@ public class MockitoMethodInvocationControl<T> implements MethodInvocationContro
      *                      the {@code invocationHandler} are considered to be
      */
     public MockitoMethodInvocationControl(Object delegator, T mockInstance, Method... methodsToMock) {
-        this.mockHandlerAccessor = new MockHandlerAccessor<T>(mockInstance);
+        this.mockHandlerAdaptor = new MockHandlerAdaptor<T>(mockInstance);
         this.mockedMethods = toSet(methodsToMock);
         this.delegator = delegator;
     }
@@ -122,7 +120,7 @@ public class MockitoMethodInvocationControl<T> implements MethodInvocationContro
            * If we come here and it means that the class has been modified by
            * PowerMock. If this handler has a delegator (i.e. is in spy mode in
            * the current implementation) and it has been caught by the Mockito
-           * proxy before our Mockgateway we need to know if the method is private
+           * proxy before our MockGateway we need to know if the method is private
            * or not. Because if the previously described preconditions are met and
            * the method is not private it means that Mockito has already processed
            * the method invocation and we should NOT delegate the call to Mockito
@@ -132,21 +130,27 @@ public class MockitoMethodInvocationControl<T> implements MethodInvocationContro
            * invocation and thus we should delegate the call to the Mockito proxy.
            */
         final Object returnValue;
-        final int methodModifiers = method.getModifiers();
-        if (hasDelegator() && !Modifier.isPrivate(methodModifiers) && !Modifier.isFinal(methodModifiers)
-                && !Modifier.isStatic(methodModifiers) && hasBeenCaughtByMockitoProxy()) {
+        if (isCanBeHandledByMockito(method) && hasBeenCaughtByMockitoProxy()) {
             returnValue = MockGateway.PROCEED;
         } else {
-            boolean inVerificationMode = isInVerificationMode();
-            if (WhiteboxImpl.isClass(obj) && inVerificationMode) {
+            if (isInStaticVerificationMode(obj)) {
                 handleStaticVerification((Class<?>) obj);
             }
-            returnValue = performIntercept(obj, method, arguments);
+            returnValue = mockHandlerAdaptor.performIntercept(obj, method, arguments);
             if (returnValue == null) {
                 return MockGateway.SUPPRESS;
             }
         }
         return returnValue;
+    }
+    
+    private boolean isInStaticVerificationMode(final Object obj) {
+        return WhiteboxImpl.isClass(obj) && isInVerificationMode();
+    }
+    
+    private boolean isCanBeHandledByMockito(final Method method) {
+        final int modifiers = method.getModifiers();
+        return hasDelegator() && !Modifier.isPrivate(modifiers) && !Modifier.isFinal(modifiers) && !Modifier.isStatic(modifiers);
     }
     
     private void handleStaticVerification(Class<?> cls) {
@@ -166,66 +170,6 @@ public class MockitoMethodInvocationControl<T> implements MethodInvocationContro
         */
         final StackTraceElement[] filteredStackTrace = filter.filter(stackTrace, true);
         return filteredStackTrace.length != stackTrace.length;
-    }
-    
-    private Object performIntercept(final Object interceptionObject, final Method method, Object[] arguments) throws Throwable {
-    
-        final CleanTraceRealMethod cleanTraceRealMethod = createRealMethod(interceptionObject, method);
-    
-        Invocation invocation = new InvocationImpl(
-            interceptionObject,
-            new DelegatingMethod(method),
-            arguments,
-            SequenceNumber.next(),
-            cleanTraceRealMethod,
-            new LocationImpl()
-        );
-        
-        try {
-            return mockHandlerAccessor.handle(invocation);
-        } catch (NotAMockException e) {
-            if (invocation.getMock()
-                          .getClass()
-                          .getName()
-                          .startsWith("java.") && MockRepository.getInstanceMethodInvocationControl(invocation.getMock()) != null) {
-                return invocation.callRealMethod();
-            } else {
-                throw e;
-            }
-        } catch (MockitoAssertionError e) {
-            InvocationControlAssertionError.updateErrorMessageForMethodInvocation(e);
-            throw e;
-        }
-    }
-    
-    private CleanTraceRealMethod createRealMethod(final Object interceptionObject, final Method method) {
-        return new CleanTraceRealMethod(new RealMethod() {
-                private static final long serialVersionUID = 4564320968038564170L;
-                
-                @Override
-                public Object invoke(Object target, Object[] arguments) throws Throwable {
-                    /*
-                         * Instruct the MockGateway to don't intercept the next call.
-                         * The reason is that when Mockito is spying on objects it
-                         * should call the "real method" (which is proxied by Mockito
-                         * anyways) so that we don't end up in here one more time which
-                         * causes infinite recursion. This should not be done if the
-                         * interceptionObject is a final system class because these are
-                         * never caught by the Mockito proxy.
-                         */
-                    final Class<?> type = Whitebox.getType(interceptionObject);
-                    final boolean isFinalSystemClass = type.getName().startsWith("java.") && Modifier.isFinal(type.getModifiers());
-                    if (!isFinalSystemClass) {
-                        MockRepository.putAdditionalState(MockGateway.DONT_MOCK_NEXT_CALL, true);
-                    }
-                    try {
-                        return method.invoke(target, arguments);
-                    } catch (InvocationTargetException e) {
-                        SafeExceptionRethrower.safeRethrow(e.getCause());
-                    }
-                    return null;
-                }
-            });
     }
     
     @Override
@@ -248,7 +192,7 @@ public class MockitoMethodInvocationControl<T> implements MethodInvocationContro
     
     public void verifyNoMoreInteractions() {
         try {
-            InvocationContainerImpl invocationContainer = (InvocationContainerImpl) mockHandlerAccessor.getInvocationContainer();
+            InvocationContainerImpl invocationContainer = (InvocationContainerImpl) mockHandlerAdaptor.getInvocationContainer();
             VerificationDataImpl data = new VerificationDataImpl(invocationContainer, null);
             VerificationModeFactory.noMoreInteractions().verify(data);
         } catch (MockitoAssertionError e) {
@@ -267,7 +211,7 @@ public class MockitoMethodInvocationControl<T> implements MethodInvocationContro
         return delegator != null;
     }
     
-    public MockHandlerAccessor<T> getMockHandlerAccessor() {
-        return mockHandlerAccessor;
+    public MockHandlerAdaptor<T> getMockHandlerAdaptor() {
+        return mockHandlerAdaptor;
     }
 }
