@@ -1,5 +1,8 @@
 buildscript {
     repositories {
+        maven {
+            url 'http://mvn.hz.netease.com/artifactory/libs-snapshots'
+        }
         mavenCentral()
         jcenter()
         maven {
@@ -8,6 +11,8 @@ buildscript {
         maven {
             url 'https://plugins.gradle.org/m2/'
         }
+
+        mavenLocal()
     }
     dependencies {
         classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
@@ -52,6 +57,23 @@ apply from: "${gradleScriptDir}/version.gradle"
 
 allprojects{
     apply plugin: 'propdeps-idea'
+
+    repositories {
+
+        mavenCentral()
+        jcenter()
+        maven {
+            url 'http://mvn.hz.netease.com/artifactory/libs-snapshots'
+        }
+        maven {
+            url 'http://repo.spring.io/plugins-release'
+        }
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
+
+        mavenLocal()
+    }
 
     apply plugin: 'checkstyle'
     checkstyle {

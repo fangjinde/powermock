@@ -106,6 +106,9 @@ public class DefaultMockCreator extends AbstractMockCreator {
         
         if (isSpy) {
             settings.defaultAnswer(Mockito.CALLS_REAL_METHODS);
+            if (settings.getSpiedInstance()==null){
+                settings.spiedInstance(delegator);
+            }
         }
         
         settings.setMockName(new MockNameImpl(mockName));

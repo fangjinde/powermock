@@ -19,13 +19,11 @@ package org.powermock.api.mockito.internal.invocation;
 import org.mockito.Mockito;
 import org.mockito.exceptions.base.MockitoAssertionError;
 import org.mockito.exceptions.misusing.NotAMockException;
-import org.mockito.internal.InternalMockHandler;
 import org.mockito.internal.creation.DelegatingMethod;
 import org.mockito.internal.debugging.Localized;
 import org.mockito.internal.debugging.LocationImpl;
 import org.mockito.internal.exceptions.stacktrace.StackTraceFilter;
 import org.mockito.internal.invocation.InvocationImpl;
-import org.mockito.internal.invocation.MatchersBinder;
 import org.mockito.internal.invocation.realmethod.CleanTraceRealMethod;
 import org.mockito.internal.invocation.realmethod.RealMethod;
 import org.mockito.internal.progress.MockingProgress;
@@ -240,7 +238,7 @@ public class MockitoMethodInvocationControl implements MethodInvocationControl {
             arguments,
             SequenceNumber.next(),
             cleanTraceRealMethod,
-            new LocationImpl()
+            new LocationImpl(),this.delegator
         );
         
         try {
