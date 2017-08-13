@@ -97,19 +97,33 @@ public class DefaultMockCreator extends AbstractMockCreator {
                                                                  MockSettings mockSettings) {
         final MockSettingsImpl<T> settings;
         final MockMaker mockMaker = getMockMaker();
+
+
         
         if (mockSettings == null) {
             settings = (MockSettingsImpl) Mockito.withSettings();
         } else {
             settings = (MockSettingsImpl) mockSettings;
         }
-        
+
+        // fix not consistence initialization of "settings,delegator,isSpy"
+        if (settings.getSpiedInstance() != null || delegator != null) {
+            if (Mockito.CALLS_REAL_METHODS == settings.getDefaultAnswer()) {
+                isSpy = true;
+            }
+        }
+        // fix not consistence initialization of "settings,delegator,isSpy"
         if (isSpy) {
             settings.defaultAnswer(Mockito.CALLS_REAL_METHODS);
             if (settings.getSpiedInstance()==null){
                 settings.spiedInstance(delegator);
             }
+            if (delegator==null){
+                delegator=settings.getSpiedInstance();
+            }
         }
+
+
         
         settings.setMockName(new MockNameImpl(mockName));
         settings.setTypeToMock(type);
