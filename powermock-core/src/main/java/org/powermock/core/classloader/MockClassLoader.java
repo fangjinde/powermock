@@ -302,6 +302,10 @@ public class MockClassLoader extends DeferSupportingClassLoader {
     public void setMockTransformerChain(List<MockTransformer> mockTransformerChain) {
         this.mockTransformerChain = mockTransformerChain;
     }
+
+    public List<MockTransformer> getMockTransformerChain(){
+        return mockTransformerChain;
+    }
     
     @Override
     protected boolean shouldModifyClass(String s) {

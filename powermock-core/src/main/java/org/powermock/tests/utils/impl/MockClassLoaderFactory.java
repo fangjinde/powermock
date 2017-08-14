@@ -28,6 +28,7 @@ import org.powermock.core.transformers.impl.InterfaceMockTransformer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -36,6 +37,9 @@ class MockClassLoaderFactory {
     private final Class<?> testClass;
     private final String[] classesToLoadByMockClassloader;
     private final MockTransformer[] extraMockTransformers;
+
+    private static ClassLoader cachedClassLoader=null;
+
 
     public MockClassLoaderFactory(Class<?> testClass, String[] classesToLoadByMockClassloader, String[] packagesToIgnore, MockTransformer... extraMockTransformers) {
         this.testClass = testClass;
@@ -58,20 +62,35 @@ class MockClassLoaderFactory {
 
     protected ClassLoader createMockClassLoader(final String[] classesToLoadByMockClassloader) {
 
-        List<MockTransformer> mockTransformerChain = getMockTransformers(extraMockTransformers);
-        final UseClassPathAdjuster useClassPathAdjuster = testClass.getAnnotation(UseClassPathAdjuster.class);
 
-        ClassLoader mockLoader = AccessController.doPrivileged(new PrivilegedAction<MockClassLoader>() {
-            @Override
-            public MockClassLoader run() {
-                return new MockClassLoader(classesToLoadByMockClassloader, packagesToIgnore, useClassPathAdjuster);
+        synchronized (MockClassLoaderFactory.class){
+            if (cachedClassLoader==null){
+                List<MockTransformer> mockTransformerChain = getMockTransformers(extraMockTransformers);
+                final UseClassPathAdjuster useClassPathAdjuster = testClass.getAnnotation(UseClassPathAdjuster.class);
+
+                ClassLoader mockLoader = AccessController.doPrivileged(new PrivilegedAction<MockClassLoader>() {
+                    @Override
+                    public MockClassLoader run() {
+                        return new MockClassLoader(classesToLoadByMockClassloader, packagesToIgnore, useClassPathAdjuster);
+                    }
+                });
+
+                MockClassLoader mockClassLoader = (MockClassLoader) mockLoader;
+                mockClassLoader.setMockTransformerChain(mockTransformerChain);
+                new MockPolicyInitializerImpl(testClass).initialize(mockLoader);
+                cachedClassLoader=mockClassLoader;
+            }else{
+                MockClassLoader mockClassLoader = (MockClassLoader) cachedClassLoader;
+
+                //append extra TestMockTransformer
+                mockClassLoader.getMockTransformerChain().addAll(Arrays.asList(extraMockTransformers));
+                // @PowerMockIgnore package ignore fix later or not, as we can place it in base class
+                // @PrepareForTest  and @SuppressStaticInitializationFor place to base test case too
             }
-        });
+        }
 
-        MockClassLoader mockClassLoader = (MockClassLoader) mockLoader;
-        mockClassLoader.setMockTransformerChain(mockTransformerChain);
-        new MockPolicyInitializerImpl(testClass).initialize(mockLoader);
-        return mockLoader;
+
+        return cachedClassLoader;
     }
 
     protected boolean isContextClassLoaderShouldBeUsed(String[] classesToLoadByMockClassloader) {
