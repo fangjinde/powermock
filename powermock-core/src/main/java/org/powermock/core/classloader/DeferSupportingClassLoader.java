@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.SoftReference;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -61,6 +63,20 @@ public abstract class DeferSupportingClassLoader extends Loader {
             deferPackages = newDeferPackages;
         }
     }
+
+    public void addIgnorePackageIfNotExist(String... packagesToIgnore) {
+        if (packagesToIgnore != null && packagesToIgnore.length > 0) {
+            List<String>  ignorePackageList= Arrays.asList(deferPackages);
+            for (String pkgIgnore:packagesToIgnore){
+                if (!ignorePackageList.contains(pkgIgnore)){
+                    ignorePackageList.add(pkgIgnore);
+                }
+            }
+            deferPackages = (String[])ignorePackageList.toArray();
+        }
+    }
+
+
     
     DeferSupportingClassLoader(ClassLoader classloader, String deferPackages[]) {
         if (classloader == null) {

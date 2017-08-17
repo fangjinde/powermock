@@ -85,6 +85,7 @@ allprojects{
 apply from: "${gradleScriptDir}/modules.gradle"
 apply from: "${gradleScriptDir}/release/release.gradle"
 
+
 jar{
     enabled = false
 }
@@ -92,3 +93,9 @@ jar{
 task wrapper(type: Wrapper) {
     gradleVersion = '3.4.1'
 }
+
+task hello{
+ //   :powermock-api:powermock-api-mockito2:uploadArchives
+}
+
+

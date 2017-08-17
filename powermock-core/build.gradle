@@ -1,1 +1,89 @@
+ext{
+    // 在POM文件中使用的group ID
+    POM_GROUP_ID="org.powermock"
+    // artifactId
+    POM_ARTIFACT_ID="powermock-core"
+    // 库名称
+    POM_NAME=POM_ARTIFACT_ID
+    // 库的打包格式为aar, 常见的还有jar
+    POM_PACKAGING="jar"
+}
 
+
+apply plugin: 'maven'
+
+// 声明变量记录maven库地址
+def mavenRepositoryUrl
+// 判断是发布到正式库,还是snapshots库
+if (isReleaseBuild()) {
+    println 'RELEASE BUILD'
+    // 下面的库地址指向的是我们私有仓库的Releases 仓库
+    mavenRepositoryUrl = hasProperty('RELEASE_REPOSITORY_URL') ? RELEASE_REPOSITORY_URL
+            : "http://mvn.hz.netease.com/artifactory/libs-releases"
+} else {
+    println 'SNAPSHOTS BUILD'
+    // 下面的库地址指向的是我们私有仓库的snapshots 仓库
+    mavenRepositoryUrl = hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL
+            : "http://mvn.hz.netease.com/artifactory/libs-snapshots"
+}
+// NEXUS_USERNAME等变量在我们主项目的gradle.properties中可以找到
+def getRepositoryUsername() {
+    return hasProperty('NEXUS_USERNAME') ? NEXUS_USERNAME : ""
+}
+
+def getRepositoryPassword() {
+    return hasProperty('NEXUS_PASSWORD') ? NEXUS_PASSWORD : ""
+}
+// 根据我们在likelib下gradle.properties中声明的版本名称,来分辨是Release版本还是 snapshots版本
+def isReleaseBuild() {
+    return !version.contains("SNAPSHOT");
+}
+
+//"afterEvaluate是什么鸟？你可以理解为在配置阶段要结束，项目评估完会走到这一步。" 引用自http://jiajixin.cn/2015/08/07/gradle-android/
+//afterEvaluate { project ->
+// 我们声明我们要执行的上传到maven的task
+uploadArchives {
+    repositories {
+        mavenDeployer {
+
+            // 这样就类似坐标的方式定位到了制定的库文件
+            pom.artifactId = POM_ARTIFACT_ID
+            pom.groupId = POM_GROUP_ID
+            pom.version = version
+
+            // 授权验证,这里也就是你登陆搭建的私服服务器时候的用户名\密码
+            repository(url: mavenRepositoryUrl) {
+                authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
+            }
+
+            // 这里是配置我们maven库需要的pom.xml文件的各个内容,具体意思我们在主目录gradle.properties中解释
+            pom.project {
+                name POM_NAME
+                packaging POM_PACKAGING
+                description POM_DESCRIPTION
+                url POM_URL
+
+                scm {
+                    url POM_SCM_URL
+                    connection POM_SCM_CONNECTION
+                    developerConnection POM_SCM_DEV_CONNECTION
+                }
+
+                licenses {
+                    license {
+                        name POM_LICENCE_NAME
+                        url POM_LICENCE_URL
+                        distribution POM_LICENCE_DIST
+                    }
+                }
+
+                developers {
+                    developer {
+                        id POM_DEVELOPER_ID
+                        name POM_DEVELOPER_NAME
+                    }
+                }
+            }
+        }
+    }
+}

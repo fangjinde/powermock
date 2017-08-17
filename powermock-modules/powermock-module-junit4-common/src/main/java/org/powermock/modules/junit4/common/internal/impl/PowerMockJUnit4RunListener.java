@@ -52,7 +52,7 @@ public class PowerMockJUnit4RunListener extends RunListener {
 			notifyListenersOfTestResult();
 		} finally {
 			// Clear state
-			Whitebox.invokeMethod(mockRepositoryClass, "clear");
+			Whitebox.invokeMethod(mockRepositoryClass, "clearStaticClassMocks");
 		}
 	}
 

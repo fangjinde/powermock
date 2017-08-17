@@ -127,6 +127,10 @@ public class MockRepository {
         afterMethodRunners.clear();
 	}
 
+	public synchronized static void clearStaticClassMocks() {
+		classMocks.clear();
+	}
+
 	/**
 	 * Removes an object from the MockRepository if it exists.
 	 */

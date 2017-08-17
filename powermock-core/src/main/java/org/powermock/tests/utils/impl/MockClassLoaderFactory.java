@@ -85,7 +85,10 @@ class MockClassLoaderFactory {
                 //append extra TestMockTransformer
                 mockClassLoader.getMockTransformerChain().addAll(Arrays.asList(extraMockTransformers));
                 // @PowerMockIgnore package ignore fix later or not, as we can place it in base class
+                mockClassLoader.addIgnorePackageIfNotExist(packagesToIgnore);
                 // @PrepareForTest  and @SuppressStaticInitializationFor place to base test case too
+                mockClassLoader.addClassesToModify(classesToLoadByMockClassloader);
+                new MockPolicyInitializerImpl(testClass).initialize(mockClassLoader);
             }
         }
 

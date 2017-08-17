@@ -2,7 +2,7 @@ ext{
     // 在POM文件中使用的group ID
     POM_GROUP_ID="org.powermock"
     // artifactId
-    POM_ARTIFACT_ID="powermock-reflect"
+    POM_ARTIFACT_ID="powermock-module-junit4-rule"
     // 库名称
     POM_NAME=POM_ARTIFACT_ID
     // 库的打包格式为aar, 常见的还有jar
