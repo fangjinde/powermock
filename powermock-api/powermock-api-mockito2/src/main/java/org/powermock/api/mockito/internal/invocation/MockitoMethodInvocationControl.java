@@ -30,6 +30,7 @@ import org.mockito.internal.progress.MockingProgress;
 import org.mockito.internal.progress.SequenceNumber;
 import org.mockito.internal.progress.ThreadSafeMockingProgress;
 import org.mockito.internal.stubbing.InvocationContainer;
+import org.mockito.internal.util.MockUtil;
 import org.mockito.internal.verification.VerificationDataImpl;
 import org.mockito.internal.verification.VerificationModeFactory;
 import org.mockito.invocation.Invocation;
@@ -66,7 +67,7 @@ public class MockitoMethodInvocationControl implements MethodInvocationControl {
      */
     
     private final Object mockInstance;
-    private final MockHandler mockHandler;
+    private MockHandler mockHandler;
     
     /**
      * Creates a new instance.
@@ -90,6 +91,15 @@ public class MockitoMethodInvocationControl implements MethodInvocationControl {
                                           Method... methodsToMock) {
         this(mockHandler, null, mockInstance, methodsToMock);
     }
+
+    /**
+     * never cache, as Mockito.reset will replace this handle inside
+     * @return
+     */
+    private MockHandler getInnerHandleFromMock(){
+        return MockUtil.getMockHandler(mockInstance);
+    }
+
     
     /**
      * Creates a new instance with a delegator. This delegator may be
@@ -242,7 +252,7 @@ public class MockitoMethodInvocationControl implements MethodInvocationControl {
         );
         
         try {
-            return mockHandler.handle(invocation);
+            return getInnerHandleFromMock().handle(invocation);
         } catch (NotAMockException e) {
             if (invocation.getMock()
                           .getClass()
@@ -278,7 +288,7 @@ public class MockitoMethodInvocationControl implements MethodInvocationControl {
     
     public void verifyNoMoreInteractions() {
         try {
-            InvocationContainer invocationContainer = Whitebox.invokeMethod(mockHandler, "getInvocationContainer");
+            InvocationContainer invocationContainer = Whitebox.invokeMethod(getInnerHandleFromMock(), "getInvocationContainer");
             VerificationDataImpl data = new VerificationDataImpl(invocationContainer, null);
             VerificationModeFactory.noMoreInteractions().verify(data);
         } catch (MockitoAssertionError e) {
@@ -298,6 +308,6 @@ public class MockitoMethodInvocationControl implements MethodInvocationControl {
     }
     
     public MockHandler getMockHandler() {
-        return mockHandler;
+        return getInnerHandleFromMock();
     }
 }

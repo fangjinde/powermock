@@ -14,7 +14,7 @@ apply plugin: 'maven'
 
 // 声明变量记录maven库地址
 def mavenRepositoryUrl
-// 判断是发布到正式库,还是snapshots库
+// 判断是发布到正式库,还是snaps]hots库
 if (isReleaseBuild()) {
     println 'RELEASE BUILD'
     // 下面的库地址指向的是我们私有仓库的Releases 仓库
