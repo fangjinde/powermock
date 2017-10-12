@@ -141,6 +141,16 @@ public class MockGateway {
         return doMethodCall(type, methodName, args, sig, returnTypeAsString);
     }
 
+    private static boolean mockToStringMethod(){
+        String mockToStringFucntion=System.getProperty("POWER_MOCKITO_MOCK_TO_STRING_METHOD");
+        if (mockToStringFucntion==null||mockToStringFucntion.trim().isEmpty()){
+            mockToStringFucntion=System.getenv("POWER_MOCKITO_MOCK_TO_STRING_METHOD");
+        }
+        if("true".equalsIgnoreCase(mockToStringFucntion)){
+            return true;
+        }
+        return false;
+    }
 
     private static Object doMethodCall(Object object, String methodName, Object[] args, Class<?>[] sig,
                                        String returnTypeAsString) throws Throwable {
@@ -148,9 +158,17 @@ public class MockGateway {
             return PROCEED;
         }
 
+
+
+
         MockInvocation mockInvocation = new MockInvocation(object, methodName, sig);
         MethodInvocationControl methodInvocationControl = mockInvocation.getMethodInvocationControl();
         Object returnValue = null;
+
+        // NOTICE
+        if (isToStringMethod(mockInvocation) && !mockToStringMethod()) {
+            return PROCEED;
+        }
 
         // The following describes the equals non-static method.
 
@@ -232,6 +250,16 @@ public class MockGateway {
 
     private static boolean isEqualsMethod(MockInvocation mockInvocation) {
         return "equals".equals(mockInvocation.getMethod().getName());
+    }
+
+
+    private static boolean isToStringMethod(MockInvocation mockInvocation) {
+        if ("toString".equals(mockInvocation.getMethod().getName())&& mockInvocation.getMethod().getParameterTypes().length == 0
+            && mockInvocation.getMethod().getReturnType() == String.class && !isStaticMethod(mockInvocation)
+          ) {
+            return true;
+        }
+        return false;
     }
 
     private static boolean isStaticMethod(MockInvocation mockInvocation) {

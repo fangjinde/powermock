@@ -23,7 +23,6 @@ import org.mockito.internal.configuration.plugins.Plugins;
 import org.mockito.internal.creation.MockSettingsImpl;
 import org.mockito.internal.handler.MockHandlerFactory;
 import org.mockito.internal.util.MockNameImpl;
-import org.mockito.internal.util.reflection.LenientCopyTool;
 import org.mockito.plugins.MockMaker;
 import org.powermock.api.mockito.internal.invocation.MockitoMethodInvocationControl;
 import org.powermock.core.ClassReplicaCreator;
@@ -80,9 +79,9 @@ public class DefaultMockCreator extends AbstractMockCreator {
             MockRepository.putInstanceMethodInvocationControl(mock, mockData.getMethodInvocationControl());
         }
         
-        if (isSpy) {
-            new LenientCopyTool().copyToMock(delegator, mock);
-        }
+//        if (isSpy) {
+//            new LenientCopyTool().copyToMock(delegator, mock);
+//        }
         
         return mock;
     }
